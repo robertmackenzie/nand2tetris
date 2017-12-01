@@ -56,7 +56,19 @@ object Translator {
       case Temp => ""
       case Local => ""
       case Static => ""
-      case Constant => ""
+      case Constant => {
+        s"""
+          |// *SP = i
+          |@${i}
+          |D=A
+          |@SP
+          |A=M
+          |M=D
+          |// SP++
+          |@SP
+          |M=M+1
+        """.stripMargin
+      }
       case Pointer => ""
     }
     case MemoryAccessCommand(Pop, segment, i) => segment match {
