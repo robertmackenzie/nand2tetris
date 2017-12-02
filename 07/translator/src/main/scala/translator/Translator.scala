@@ -69,54 +69,48 @@ object Translator {
   }
 
   def toAsm(statement: VMStatement): String = statement match {
-    case Add => ""
-    case Sub => ""
+    case Add => "add"
+    case Sub => "sub"
     case MemoryAccessCommand(Push, segment: FunctionSegment, i) =>
-      s"""
-        |// push ${toVM(segment)} $i
-        |@$i
-        |D=A
-        |@${toAsm(segment)}
-        |A=M+D
-        |D=M
-        |@SP
-        |A=M
-        |M=D
-        |@SP
-        |M=M+1
-      """.stripMargin
-    case MemoryAccessCommand(Push, segment: GlobalSegment, i) => segment match {
-      case Constant =>
-        s"""
-          |// push ${toVM(segment)} $i
+      s"""|// push ${toVM(segment)} $i
           |@$i
           |D=A
+          |@${toAsm(segment)}
+          |A=M+D
+          |D=M
           |@SP
           |A=M
           |M=D
           |@SP
-          |M=M+1
-        """.stripMargin
+          |M=M+1""".stripMargin
+    case MemoryAccessCommand(Push, segment: GlobalSegment, i) => segment match {
+      case Constant =>
+        s"""|// push ${toVM(segment)} $i
+            |@$i
+            |D=A
+            |@SP
+            |A=M
+            |M=D
+            |@SP
+            |M=M+1""".stripMargin
       case Pointer => ""
       case Temp => ""
       case Static => ""
     }
     case MemoryAccessCommand(Pop, segment: FunctionSegment, i) =>
-      s"""
-        |// pop ${toVM(segment)} $i
-        |@$i
-        |D=A
-        |@${toAsm(segment)}
-        |D=M+D
-        |@R13
-        |M=D
-        |@SP
-        |AM=M-1
-        |D=M
-        |@R13
-        |A=M
-        |M=D
-      """.stripMargin
+      s"""|// pop ${toVM(segment)} $i
+          |@$i
+          |D=A
+          |@${toAsm(segment)}
+          |D=M+D
+          |@R13
+          |M=D
+          |@SP
+          |AM=M-1
+          |D=M
+          |@R13
+          |A=M
+          |M=D""".stripMargin
     case MemoryAccessCommand(Pop, segment: GlobalSegment, i) => segment match {
       case Constant => throw new MatchError("Cannot pop from Constant memory segment")
       case Pointer => ""
