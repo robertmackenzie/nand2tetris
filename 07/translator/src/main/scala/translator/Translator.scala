@@ -77,8 +77,8 @@ object Translator {
   def toVM(segment: Segment): String = segment.toString.toLowerCase
 
   def toAsm(statement: VMStatement): String = statement match {
-    case Add => "add"
-    case Sub => "sub"
+    case Add => "// add"
+    case Sub => "// sub"
     case MemoryAccessCommand(Push, segment: FunctionSegment, i) =>
       s"""|// push ${toVM(segment)} $i
           |@$i
