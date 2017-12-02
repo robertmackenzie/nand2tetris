@@ -101,9 +101,9 @@ object Translator {
             |M=D
             |@SP
             |M=M+1""".stripMargin
-      case Pointer => s"push pointer $i"
-      case Temp => s"push temp $i"
-      case Static => s"push static $i"
+      case Pointer => s"// push pointer $i"
+      case Temp => s"// push temp $i"
+      case Static => s"// push static $i"
     }
     case MemoryAccessCommand(Pop, segment: FunctionSegment, i) =>
       s"""|// pop ${toVM(segment)} $i
@@ -121,7 +121,7 @@ object Translator {
           |M=D""".stripMargin
     case MemoryAccessCommand(Pop, segment: GlobalSegment, i) => segment match {
       case Constant => throw new MatchError("Cannot pop from Constant memory segment")
-      case Pointer => s"pop pointer $i"
+      case Pointer => s"// pop pointer $i"
       case Temp => s"// pop temp $i"
       case Static => s"// pop static $i"
     }
