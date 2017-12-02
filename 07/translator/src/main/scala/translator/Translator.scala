@@ -32,7 +32,7 @@ object Translator {
     Source
       .fromFile(fileName)
       .getLines()
-      .collect(parse)
+      .collect(toVMStatement)
       .map(toAsm)
       .foreach(println)
   }
@@ -40,15 +40,29 @@ object Translator {
   val MemoryAccessPattern = "(push|pop) (argument|this|that|temp|local|static|constant|pointer) (.+)".r
   val StackArithmeticPattern = "(add|sub)".r
 
-  val parse: PartialFunction[String, VMStatement] = {
-    case MemoryAccessPattern(direction, segment, index) => direction match {
-      case "push" => MemoryAccessCommand(Push, Local, index.toInt)
-      case "pop" => MemoryAccessCommand(Pop, Local, index.toInt)
-    }
+  val toVMStatement: PartialFunction[String, VMStatement] = {
+    case MemoryAccessPattern(direction, segment, index) =>
+      MemoryAccessCommand(toDirection(direction), toSegment(segment), index.toInt)
     case StackArithmeticPattern(command) => command match {
       case "add" => Add
       case "sub" => Sub
     }
+  }
+
+  val toDirection: PartialFunction[String, Direction] = {
+    case "push" => Push
+    case "pop" => Pop
+  }
+
+  val toSegment: PartialFunction[String, Segment] = {
+    case "argument" => Argument
+    case "this" => This
+    case "that" => That
+    case "temp" => Temp
+    case "local" => Local
+    case "static" => Static
+    case "constant" => Constant
+    case "pointer" => Pointer
   }
 
   def toAsm(segment: Segment): String = segment match {
