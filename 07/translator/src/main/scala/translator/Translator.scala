@@ -60,13 +60,7 @@ object Translator {
     // ... GlobalSegment
   }
 
-  def toVM(segment: Segment): String = segment match {
-    case Local => "local"
-    case This => "this"
-    case That => "that"
-    case Argument => "argument"
-    // ... GlobalSegment
-  }
+  def toVM(segment: Segment): String = segment.toString.toLowerCase
 
   def toAsm(statement: VMStatement): String = statement match {
     case Add => "add"
