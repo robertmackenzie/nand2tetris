@@ -77,6 +77,19 @@ object Translator {
     // ... GlobalSegment
   }
 
+  def calculateTempIndex(accessIndex: Int): Int = {
+    // the temp memory segment is implemented on RAM as registers R5 to R12
+    val tempRange = (5 to 12).toSet
+
+    require(tempRange.contains(accessIndex),
+      "out of bounds of the temp memory segment")
+
+    val tempBase = 5
+    val ramIndex = tempBase + accessIndex
+
+    return ramIndex
+  }
+
   def toVM(segment: Segment): String = segment.toString.toLowerCase
 
   def toAsm(fileName: String)(statement: VMStatement): String = statement match {
@@ -113,8 +126,17 @@ object Translator {
             |M=D
             |@SP
             |M=M+1""".stripMargin
-      case Temp => s"// push temp $i"
       case Pointer => s"// push pointer $i"
+      case Temp =>
+        val tempIndex = calculateTempIndex(i)
+        s"""|// push ${toVM(segment)} $i
+            |@R$tempIndex
+            |D=M
+            |@SP
+            |A=M
+            |M=D
+            |@SP
+            |M=M+1""".stripMargin
     }
     case MemoryAccessCommand(Pop, segment: FunctionSegment, i) =>
       s"""|// pop ${toVM(segment)} $i
@@ -138,10 +160,16 @@ object Translator {
             |AM=M-1
             |D=M
             |@$fileName.$i
+            |M=D""".stripMargin
+      case Temp =>
+        val tempIndex = calculateTempIndex(i)
+        s"""|// pop ${toVM(segment)} $i
+            |@R$tempIndex
+            |D=M
+            |@SP
+            |AM=M-1
             |M=D
             """.stripMargin
-      case Temp => s"// pop temp $i"
-      case Pointer => s"// pop pointer $i"
     }
   }
 }
