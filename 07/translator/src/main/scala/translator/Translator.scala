@@ -111,7 +111,7 @@ object Translator {
           |@SP
           |M=M+1""".stripMargin
     case Sub =>
-      s"""|// add
+      s"""|// sub
           |@SP
           |AM=M-1
           |D=M
