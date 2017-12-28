@@ -100,8 +100,26 @@ object Translator {
   def toVM(segment: Segment): String = segment.toString.toLowerCase
 
   def toAsm(fileName: String)(statement: VMStatement): String = statement match {
-    case Add => "// add"
-    case Sub => "// sub"
+    case Add =>
+      s"""|// add
+          |@SP
+          |AM=M-1
+          |D=M
+          |@SP
+          |AM=M-1
+          |M=D+M
+          |@SP
+          |M=M+1""".stripMargin
+    case Sub =>
+      s"""|// add
+          |@SP
+          |AM=M-1
+          |D=M
+          |@SP
+          |AM=M-1
+          |M=D-M
+          |@SP
+          |M=M+1""".stripMargin
     case MemoryAccessCommand(Push, segment: FunctionSegment, i) =>
       s"""|// push ${toVM(segment)} $i
           |@$i
