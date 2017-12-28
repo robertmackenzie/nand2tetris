@@ -74,7 +74,8 @@ object Translator {
     case This => "THIS"
     case That => "THAT"
     case Argument => "ARG"
-    // ... GlobalSegment
+    case _: GlobalSegment =>
+      throw new MatchError("Global memory segments do not have pointers in RAM. They are either fixed mappings, or virtual.")
   }
 
   def calculateTempIndex(accessIndex: Int): Int = {
