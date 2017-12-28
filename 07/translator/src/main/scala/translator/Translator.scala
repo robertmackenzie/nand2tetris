@@ -179,10 +179,10 @@ object Translator {
       case Temp =>
         val tempIndex = calculateTempIndex(i)
         s"""|// pop ${toVM(segment)} $i
-            |@R$tempIndex
-            |D=M
             |@SP
             |AM=M-1
+            |D=M
+            |@R$tempIndex
             |M=D""".stripMargin
       case Pointer =>
         s"""|// pop ${toVM(segment)} $i
