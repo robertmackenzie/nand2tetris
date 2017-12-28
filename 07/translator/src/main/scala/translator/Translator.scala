@@ -1,6 +1,7 @@
 package translator
 
 import scala.io.Source
+import java.io.File
 
 sealed trait Direction
 case object Push extends Direction
@@ -29,11 +30,13 @@ object Translator {
   def main(args: Array[String]): Unit = {
     val Array(fileName) = args
 
+    val file = new File(fileName)
+
     Source
-      .fromFile(fileName)
+      .fromFile(file)
       .getLines()
       .collect(toVMStatement)
-      .map(toAsm)
+      .map(toAsm(file.getParentFile.toPath.getFileName.toString))
       .foreach(println)
   }
 
@@ -76,7 +79,7 @@ object Translator {
 
   def toVM(segment: Segment): String = segment.toString.toLowerCase
 
-  def toAsm(statement: VMStatement): String = statement match {
+  def toAsm(fileName: String)(statement: VMStatement): String = statement match {
     case Add => "// add"
     case Sub => "// sub"
     case MemoryAccessCommand(Push, segment: FunctionSegment, i) =>
@@ -101,9 +104,17 @@ object Translator {
             |M=D
             |@SP
             |M=M+1""".stripMargin
-      case Pointer => s"// push pointer $i"
+      case Static =>
+        s"""|// push ${toVM(segment)} $i
+            |@$fileName.$i
+            |D=M
+            |@SP
+            |A=M
+            |M=D
+            |@SP
+            |M=M+1""".stripMargin
       case Temp => s"// push temp $i"
-      case Static => s"// push static $i"
+      case Pointer => s"// push pointer $i"
     }
     case MemoryAccessCommand(Pop, segment: FunctionSegment, i) =>
       s"""|// pop ${toVM(segment)} $i
@@ -121,9 +132,16 @@ object Translator {
           |M=D""".stripMargin
     case MemoryAccessCommand(Pop, segment: GlobalSegment, i) => segment match {
       case Constant => throw new MatchError("Cannot pop from Constant memory segment")
-      case Pointer => s"// pop pointer $i"
+      case Static =>
+        s"""|// pop ${toVM(segment)} $i
+            |@SP
+            |AM=M-1
+            |D=M
+            |@$fileName.$i
+            |M=D
+            """.stripMargin
       case Temp => s"// pop temp $i"
-      case Static => s"// pop static $i"
+      case Pointer => s"// pop pointer $i"
     }
   }
 }
