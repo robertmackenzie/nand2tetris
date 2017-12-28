@@ -90,6 +90,12 @@ object Translator {
     return ramIndex
   }
 
+  def resolvePointer(index: Int): String = index match {
+    case 0 => "THIS"
+    case 1 => "THAT"
+    case _ => throw new MatchError("Pointer segment index out of range.")
+  }
+
   def toVM(segment: Segment): String = segment.toString.toLowerCase
 
   def toAsm(fileName: String)(statement: VMStatement): String = statement match {
@@ -126,11 +132,19 @@ object Translator {
             |M=D
             |@SP
             |M=M+1""".stripMargin
-      case Pointer => s"// push pointer $i"
       case Temp =>
         val tempIndex = calculateTempIndex(i)
         s"""|// push ${toVM(segment)} $i
             |@R$tempIndex
+            |D=M
+            |@SP
+            |A=M
+            |M=D
+            |@SP
+            |M=M+1""".stripMargin
+      case Pointer =>
+        s"""|// push ${toVM(segment)} $i
+            |@${resolvePointer(i)}
             |D=M
             |@SP
             |A=M
@@ -168,6 +182,13 @@ object Translator {
             |D=M
             |@SP
             |AM=M-1
+            |M=D""".stripMargin
+      case Pointer =>
+        s"""|// pop ${toVM(segment)} $i
+            |@SP
+            |AM=M-1
+            |D=M
+            |@${resolvePointer(i)}
             |M=D
             """.stripMargin
     }
