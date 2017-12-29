@@ -30,6 +30,7 @@ case object Neg extends StackArithmeticCommand
 case object Eq extends StackArithmeticCommand
 case object Gt extends StackArithmeticCommand
 case object Lt extends StackArithmeticCommand
+case object And extends StackArithmeticCommand
 
 object Translator {
   def main(args: Array[String]): Unit = {
@@ -53,7 +54,7 @@ object Translator {
   }
 
   val MemoryAccessPattern = "(push|pop) (argument|this|that|temp|local|static|constant|pointer) (.+)".r
-  val StackArithmeticPattern = "(add|sub|neg|eq|gt|lt)".r
+  val StackArithmeticPattern = "(add|sub|neg|eq|gt|lt|and)".r
 
   val toVMStatement: PartialFunction[String, VMStatement] = {
     case MemoryAccessPattern(direction, segment, index) =>
@@ -65,6 +66,7 @@ object Translator {
       case "eq" => Eq
       case "gt" => Gt
       case "lt" => Lt
+      case "and" => And
     }
   }
 
@@ -202,6 +204,16 @@ object Translator {
           |@SP
           |A=M
           |M=D
+          |@SP
+          |M=M+1""".stripMargin
+    case And =>
+      s"""|// and
+          |@SP
+          |AM=M-1
+          |D=M
+          |@SP
+          |AM=M-1
+          |M=D&M
           |@SP
           |M=M+1""".stripMargin
     case MemoryAccessCommand(Push, segment: FunctionSegment, i) =>
