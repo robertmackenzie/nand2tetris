@@ -1,7 +1,7 @@
 package translator
 
 import scala.io.Source
-import java.io.File
+import java.io.{File, PrintWriter}
 
 sealed trait Direction
 case object Push extends Direction
@@ -32,12 +32,19 @@ object Translator {
 
     val file = new File(fileName)
 
-    Source
-      .fromFile(file)
-      .getLines()
-      .collect(toVMStatement)
-      .map(toAsm(file.getParentFile.toPath.getFileName.toString))
-      .foreach(println)
+    val writer = new PrintWriter(fileName.replaceFirst("\\.vm", ".asm"))
+
+    try {
+      Source
+        .fromFile(file)
+        .getLines()
+        .collect(toVMStatement)
+        .map(toAsm(file.getParentFile.toPath.getFileName.toString))
+        .foreach(writer.println)
+    } finally {
+      writer.flush()
+      writer.close()
+    }
   }
 
   val MemoryAccessPattern = "(push|pop) (argument|this|that|temp|local|static|constant|pointer) (.+)".r
