@@ -2,6 +2,7 @@ package translator
 
 import scala.io.Source
 import java.io.{File, PrintWriter}
+import java.util.UUID
 
 sealed trait Direction
 case object Push extends Direction
@@ -26,6 +27,7 @@ sealed trait StackArithmeticCommand extends VMStatement
 case object Add extends StackArithmeticCommand
 case object Sub extends StackArithmeticCommand
 case object Neg extends StackArithmeticCommand
+case object Eq extends StackArithmeticCommand
 
 object Translator {
   def main(args: Array[String]): Unit = {
@@ -49,7 +51,7 @@ object Translator {
   }
 
   val MemoryAccessPattern = "(push|pop) (argument|this|that|temp|local|static|constant|pointer) (.+)".r
-  val StackArithmeticPattern = "(add|sub)".r
+  val StackArithmeticPattern = "(add|sub|eq)".r
 
   val toVMStatement: PartialFunction[String, VMStatement] = {
     case MemoryAccessPattern(direction, segment, index) =>
@@ -58,6 +60,7 @@ object Translator {
       case "add" => Add
       case "sub" => Sub
       case "neg" => Neg
+      case "eq" => Eq
     }
   }
 
@@ -134,6 +137,23 @@ object Translator {
           |@SP
           |AM=M-1
           |M=-M
+          |@SP
+          |M=M+1""".stripMargin
+    case Eq =>
+      val uuid = UUID.randomUUID.toString
+      s"""|// eq
+          |@SP
+          |AM=M-1
+          |D=M
+          |@SP
+          |AM=M-1
+          |MD=M-D
+          |@EQ.$uuid
+          |D;JEQ
+          |@SP
+          |A=M
+          |M=-1
+          |(EQ.$uuid)
           |@SP
           |M=M+1""".stripMargin
     case MemoryAccessCommand(Push, segment: FunctionSegment, i) =>
