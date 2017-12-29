@@ -157,12 +157,13 @@ object Translator {
           |D=M
           |@SP
           |AM=M-1
-          |MD=M-D
+          |D=M-D
+          |M=-1
           |@EQ.is_true.$uuid
           |D;JEQ
           |@SP
           |A=M
-          |M=-1
+          |M=0
           |(EQ.is_true.$uuid)
           |@SP
           |M=M+1""".stripMargin
@@ -177,11 +178,11 @@ object Translator {
           |D=M-D
           |@GT.is_true.$uuid
           |D;JGT
-          |D=-1
+          |D=0
           |@GT.end.$uuid
           |0;JMP
           |(GT.is_true.$uuid)
-          |D=0
+          |D=-1
           |(GT.end.$uuid)
           |@SP
           |A=M
@@ -199,11 +200,11 @@ object Translator {
           |D=M-D
           |@LT.is_true.$uuid
           |D;JLT
-          |D=-1
+          |D=0
           |@LT.end.$uuid
           |0;JMP
           |(LT.is_true.$uuid)
-          |D=0
+          |D=-1
           |(LT.end.$uuid)
           |@SP
           |A=M
