@@ -215,8 +215,7 @@ object Translator {
             |AM=M-1
             |D=M
             |@${resolvePointer(i)}
-            |M=D
-            """.stripMargin
+            |M=D""".stripMargin
     }
   }
 }
