@@ -28,6 +28,8 @@ case object Add extends StackArithmeticCommand
 case object Sub extends StackArithmeticCommand
 case object Neg extends StackArithmeticCommand
 case object Eq extends StackArithmeticCommand
+case object Gt extends StackArithmeticCommand
+case object Lt extends StackArithmeticCommand
 
 object Translator {
   def main(args: Array[String]): Unit = {
@@ -51,7 +53,7 @@ object Translator {
   }
 
   val MemoryAccessPattern = "(push|pop) (argument|this|that|temp|local|static|constant|pointer) (.+)".r
-  val StackArithmeticPattern = "(add|sub|neg|eq)".r
+  val StackArithmeticPattern = "(add|sub|neg|eq|gt|lt)".r
 
   val toVMStatement: PartialFunction[String, VMStatement] = {
     case MemoryAccessPattern(direction, segment, index) =>
@@ -61,6 +63,8 @@ object Translator {
       case "sub" => Sub
       case "neg" => Neg
       case "eq" => Eq
+      case "gt" => Gt
+      case "lt" => Lt
     }
   }
 
@@ -148,12 +152,56 @@ object Translator {
           |@SP
           |AM=M-1
           |MD=M-D
-          |@EQ.$uuid
+          |@EQ.is_true.$uuid
           |D;JEQ
           |@SP
           |A=M
           |M=-1
-          |(EQ.$uuid)
+          |(EQ.is_true.$uuid)
+          |@SP
+          |M=M+1""".stripMargin
+    case Gt =>
+      val uuid = UUID.randomUUID.toString
+      s"""|// gt
+          |@SP
+          |AM=M-1
+          |D=M
+          |@SP
+          |AM=M-1
+          |D=M-D
+          |@GT.is_true.$uuid
+          |D;JGT
+          |D=-1
+          |@GT.end.$uuid
+          |0;JMP
+          |(GT.is_true.$uuid)
+          |D=0
+          |(GT.end.$uuid)
+          |@SP
+          |A=M
+          |M=D
+          |@SP
+          |M=M+1""".stripMargin
+    case Lt =>
+      val uuid = UUID.randomUUID.toString
+      s"""|// lt
+          |@SP
+          |AM=M-1
+          |D=M
+          |@SP
+          |AM=M-1
+          |D=M-D
+          |@LT.is_true.$uuid
+          |D;JLT
+          |D=-1
+          |@LT.end.$uuid
+          |0;JMP
+          |(LT.is_true.$uuid)
+          |D=0
+          |(LT.end.$uuid)
+          |@SP
+          |A=M
+          |M=D
           |@SP
           |M=M+1""".stripMargin
     case MemoryAccessCommand(Push, segment: FunctionSegment, i) =>
@@ -248,4 +296,3 @@ object Translator {
     }
   }
 }
-
