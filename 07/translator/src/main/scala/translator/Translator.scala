@@ -124,7 +124,7 @@ object Translator {
           |D=M
           |@SP
           |AM=M-1
-          |M=D-M
+          |M=M-D
           |@SP
           |M=M+1""".stripMargin
     case MemoryAccessCommand(Push, segment: FunctionSegment, i) =>
