@@ -25,6 +25,7 @@ case class MemoryAccessCommand(direction: Direction, segment: Segment, index: In
 sealed trait StackArithmeticCommand extends VMStatement
 case object Add extends StackArithmeticCommand
 case object Sub extends StackArithmeticCommand
+case object Neg extends StackArithmeticCommand
 
 object Translator {
   def main(args: Array[String]): Unit = {
@@ -56,6 +57,7 @@ object Translator {
     case StackArithmeticPattern(command) => command match {
       case "add" => Add
       case "sub" => Sub
+      case "neg" => Neg
     }
   }
 
@@ -125,6 +127,13 @@ object Translator {
           |@SP
           |AM=M-1
           |M=M-D
+          |@SP
+          |M=M+1""".stripMargin
+    case Neg =>
+      s"""|// neg
+          |@SP
+          |AM=M-1
+          |M=-M
           |@SP
           |M=M+1""".stripMargin
     case MemoryAccessCommand(Push, segment: FunctionSegment, i) =>
