@@ -58,9 +58,9 @@ object Translator {
     }
   }
 
-  val MemoryAccessPattern = "(push|pop) (argument|this|that|temp|local|static|constant|pointer) (.+)".r
-  val StackArithmeticPattern = "(add|sub|neg|eq|gt|lt|and|or|not)".r
-  val BranchingPattern = "(label|goto|if-goto) (.+)".r
+  val MemoryAccessPattern = "(push|pop) (argument|this|that|temp|local|static|constant|pointer) (\\d+).*".r
+  val StackArithmeticPattern = "(add|sub|neg|eq|gt|lt|and|or|not).*".r
+  val BranchingPattern = "(label|goto|if-goto) (\\w+).*".r
 
   val toVMStatement: PartialFunction[String, VMStatement] = {
     case BranchingPattern(command, label) => command match {
