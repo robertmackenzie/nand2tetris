@@ -33,6 +33,10 @@ case object Lt extends StackArithmeticCommand
 case object And extends StackArithmeticCommand
 case object Or extends StackArithmeticCommand
 case object Not extends StackArithmeticCommand
+sealed trait BranchingCommand extends VMStatement
+case class Label(label: String) extends BranchingCommand
+case class Goto(label: String) extends BranchingCommand
+case class IfGoto(label: String) extends BranchingCommand
 
 object Translator {
   def main(args: Array[String]): Unit = {
@@ -50,15 +54,20 @@ object Translator {
         .map(toAsm(file.getParentFile.toPath.getFileName.toString))
         .foreach(writer.println)
     } finally {
-      writer.flush()
       writer.close()
     }
   }
 
   val MemoryAccessPattern = "(push|pop) (argument|this|that|temp|local|static|constant|pointer) (.+)".r
   val StackArithmeticPattern = "(add|sub|neg|eq|gt|lt|and|or|not)".r
+  val BranchingPattern = "(label|goto|if-goto) (.+)".r
 
   val toVMStatement: PartialFunction[String, VMStatement] = {
+    case BranchingPattern(command, label) => command match {
+      case "label" => Label(label)
+      case "goto" => Goto(label)
+      case "if-goto" => IfGoto(label)
+    }
     case MemoryAccessPattern(direction, segment, index) =>
       MemoryAccessCommand(toDirection(direction), toSegment(segment), index.toInt)
     case StackArithmeticPattern(command) => command match {
@@ -122,6 +131,20 @@ object Translator {
   def toVM(segment: Segment): String = segment.toString.toLowerCase
 
   def toAsm(fileName: String)(statement: VMStatement): String = statement match {
+    case IfGoto(name) =>
+      s"""|// if-goto $name
+          |@SP
+          |AM=M-1
+          |D=M
+          |@$name
+          |D;JNE""".stripMargin
+    case Goto(name) =>
+      s"""|// goto $name
+          |@$name
+          |0;JMP""".stripMargin
+    case Label(name) =>
+      s"""|// label $name
+          |($name)""".stripMargin
     case Add =>
       s"""|// add
           |@SP
