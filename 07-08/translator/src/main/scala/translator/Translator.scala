@@ -37,6 +37,10 @@ sealed trait BranchingCommand extends VMStatement
 case class Label(label: String) extends BranchingCommand
 case class Goto(label: String) extends BranchingCommand
 case class IfGoto(label: String) extends BranchingCommand
+sealed trait FunctionCommand extends VMStatement
+case class Declaration(label: String, locals: Int) extends FunctionCommand
+case class Call(label: String, arity: Int) extends FunctionCommand
+case object Return extends FunctionCommand
 
 object Translator {
   def main(args: Array[String]): Unit = {
@@ -61,8 +65,14 @@ object Translator {
   val MemoryAccessPattern = "(push|pop) (argument|this|that|temp|local|static|constant|pointer) (\\d+).*".r
   val StackArithmeticPattern = "(add|sub|neg|eq|gt|lt|and|or|not).*".r
   val BranchingPattern = "(label|goto|if-goto) (\\w+).*".r
+  val FunctionCommandPattern = "(function|call) (.+) (\\d+).*".r
 
   val toVMStatement: PartialFunction[String, VMStatement] = {
+    case FunctionCommandPattern(command, label, arity) => command match {
+      case "function" => Declaration(label, arity.toInt)
+      case "call" => Call(label, arity.toInt)
+    }
+    case "return" => Return
     case BranchingPattern(command, label) => command match {
       case "label" => Label(label)
       case "goto" => Goto(label)
@@ -131,6 +141,62 @@ object Translator {
   def toVM(segment: Segment): String = segment.toString.toLowerCase
 
   def toAsm(fileName: String)(statement: VMStatement): String = statement match {
+    case Return =>
+      s"""|// return
+          |@LCL // frame = LCL
+          |D=M
+          |@R13
+          |M=D
+          |@5 // retAddr = *(frame - 5)
+          |A=D-A
+          |D=M
+          |@R14
+          |M=D
+          |@SP // *ARG = pop
+          |A=M-1
+          |D=M
+          |@ARG
+          |A=M
+          |M=D
+          |@ARG // SP = ARG + 1
+          |D=M
+          |@SP
+          |M=D+1
+          |@R13 // THAT = *(frame - 1)
+          |A=M-1
+          |D=M
+          |@THAT
+          |M=D
+          |@2 // THIS = *(frame - 2)
+          |D=A
+          |@R13
+          |A=M-D
+          |D=M
+          |@THIS
+          |M=D
+          |@3 // ARG = *(frame - 3)
+          |D=A
+          |@R13
+          |A=M-D
+          |D=M
+          |@ARG
+          |M=D
+          |@4 // LCL = *(frame - 4)
+          |D=A
+          |@R13
+          |A=M-D
+          |D=M
+          |@LCL
+          |M=D
+          |@R14
+          |A=M
+          |0;JMP""".stripMargin
+    case Declaration(name, locals) =>
+      val label = s"""|// function $name $locals
+                      |($name)""".stripMargin
+      val pushConstant0 = toAsm(fileName)(MemoryAccessCommand(Push, Constant, 0))
+
+      label + '\n' + pushConstant0 + '\n' + pushConstant0
     case IfGoto(name) =>
       s"""|// if-goto $name
           |@SP
