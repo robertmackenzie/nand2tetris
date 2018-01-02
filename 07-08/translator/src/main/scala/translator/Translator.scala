@@ -141,6 +141,51 @@ object Translator {
   def toVM(segment: Segment): String = segment.toString.toLowerCase
 
   def toAsm(fileName: String)(statement: VMStatement): String = statement match {
+    case Call(name, arity) =>
+      val uuid = UUID.randomUUID.toString
+      val RET_ADDRESS = s"RET_ADDRESS.$uuid"
+
+      val pushReturnAddress = s"""|// call $name $arity
+                                  |@$RET_ADDRESS
+                                  |D=A
+                                  |@SP
+                                  |A=M
+                                  |M=D""".stripMargin
+
+      val saveFrame = List("LCL", "ARG", "THIS", "THAT").map { pointer =>
+        s"""|@$pointer // push $pointer
+            |D=M
+            |@SP
+            |AM=M+1
+            |M=D""".stripMargin
+      }.mkString("\n")
+
+      val setArg = s"""|@$arity
+                       |D=A
+                       |@SP
+                       |D=M-D
+                       |@5
+                       |D=D-A
+                       |@ARG
+                       |M=D""".stripMargin
+
+      val setLcl = s"""|@SP
+                       |D=M
+                       |@LCL
+                       |M=D""".stripMargin
+
+      val goto = toAsm(fileName)(Goto(name))
+
+      val returnLabel = s"($RET_ADDRESS)"
+
+      List(
+        pushReturnAddress,
+        saveFrame,
+        setArg,
+        setLcl,
+        goto,
+        returnLabel
+      ).mkString("\n")
     case Return =>
       s"""|// return
           |@LCL // frame = LCL
