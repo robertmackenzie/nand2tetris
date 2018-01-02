@@ -44,18 +44,35 @@ case object Return extends FunctionCommand
 
 object Translator {
   def main(args: Array[String]): Unit = {
-    val Array(fileName) = args
+    val Array(path) = args
 
-    val file = new File(fileName)
+    val file = new File(path)
+    val fileName = file.getParentFile.toPath.getFileName.toString
 
-    val writer = new PrintWriter(fileName.replaceFirst("\\.vm", ".asm"))
+    val writer = new PrintWriter(path.replaceFirst("\\.vm", ".asm"))
+
+    val initializeStackPointer =
+      s"""| // boot
+          |@256
+          |@SP
+          |M=A""".stripMargin
+
+    val callSysInit = toAsm(fileName)(Call("Sys.init", 0))
+
+    val boot = List(
+      initializeStackPointer,
+      callSysInit
+    ).mkString("\n")
 
     try {
+      writer.write(boot)
+      writer.write('\n')
+
       Source
         .fromFile(file)
         .getLines()
         .collect(toVMStatement)
-        .map(toAsm(file.getParentFile.toPath.getFileName.toString))
+        .map(toAsm(fileName))
         .foreach(writer.println)
     } finally {
       writer.close()
