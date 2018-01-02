@@ -1,7 +1,7 @@
 package translator
 
 import scala.io.Source
-import java.io.{File, PrintWriter}
+import java.io.{File, PrintWriter, FilenameFilter}
 import java.util.UUID
 
 sealed trait Direction
@@ -45,11 +45,20 @@ case object Return extends FunctionCommand
 object Translator {
   def main(args: Array[String]): Unit = {
     val Array(path) = args
-
     val file = new File(path)
-    val fileName = file.getParentFile.toPath.getFileName.toString
+    val filter = new FilenameFilter {
+      def accept(dir: File, name: String): Boolean = {
+        name.matches("^.+\\.vm")
+      }
+    }
 
-    val writer = new PrintWriter(path.replaceFirst("\\.vm", ".asm"))
+    val files: Array[File] = if (file.isDirectory) {
+      file.listFiles(filter)
+    } else {
+      Array(file)
+    }
+
+    val writer = new PrintWriter(s"${file.getPath}/${file.getName}.asm")
 
     val initializeStackPointer =
       s"""| // boot
@@ -57,7 +66,7 @@ object Translator {
           |@SP
           |M=A""".stripMargin
 
-    val callSysInit = toAsm(fileName)(Call("Sys.init", 0))
+    val callSysInit = toAsm("")(Call("Sys.init", 0))
 
     val boot = List(
       initializeStackPointer,
@@ -68,13 +77,15 @@ object Translator {
       writer.write(boot)
       writer.write('\n')
 
-      Source
-        .fromFile(file)
-        .getLines()
-        .collect(toVMStatement)
-        .map(toAsm(fileName))
-        .foreach(writer.println)
-    } finally {
+      files.foreach { source =>
+        Source
+          .fromFile(source)
+          .getLines()
+          .collect(toVMStatement)
+          .map(toAsm(source.getName))
+          .foreach(writer.println)
+      }
+    } finally  {
       writer.close()
     }
   }
